@@ -1,3 +1,6 @@
+<h1>Download Link</h1>
+<button href="https://github.com/mdshakiburrahman6/Auto-Filler-Extention/archive/refs/heads/main.zip">DOWNLOAD</button>
+
 INSTALL (Chrome / Edge / Brave)
 1. Unzip this folder.
 2. Open chrome://extensions
