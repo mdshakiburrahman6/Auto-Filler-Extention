@@ -10,10 +10,37 @@
   let settings = { ...DEFAULTS };
   let bubble = null, menu = null, lastModal = null;
 
-  const load = () => new Promise(r =>
-    chrome.storage.local.get(DEFAULTS, s => { settings = s; r(s); }));
+  const load = () => new Promise(resolve => {
+    try {
+      chrome.storage.local.get(DEFAULTS, s => {
+        try {
+          if (chrome.runtime.lastError || !s) return resolve(settings);
+          settings = s;
+          resolve(s);
+        } catch (_) {
+          resolve(settings);
+        }
+      });
+    } catch (_) {
+      // The extension may have been reloaded or disabled while this page was open.
+      resolve(settings);
+    }
+  });
+  const save = data => {
+    try {
+      chrome.storage.local.set(data, () => {
+        try { void chrome.runtime.lastError; } catch (_) {}
+      });
+    } catch (_) {
+      // Ignore writes from a stale content script after extension reload/disable.
+    }
+  };
   load();
-  chrome.storage.onChanged.addListener(() => load().then(syncBubble));
+  try {
+    chrome.storage.onChanged.addListener(() => load().then(syncBubble));
+  } catch (_) {
+    // The page can outlive the extension context that injected this script.
+  }
 
   // ---------- helpers ----------
   const visibleInputs = () => [...document.querySelectorAll(
@@ -45,6 +72,22 @@
     ['input', 'change', 'blur'].forEach(t => el.dispatchEvent(new Event(t, { bubbles: true })));
   };
 
+  const scrollToBottom = () => {
+    const root = document.scrollingElement || document.documentElement;
+    const scrollable = [...document.querySelectorAll('body, body *')]
+      .filter(el => {
+        const overflowY = getComputedStyle(el).overflowY;
+        return el.scrollHeight > el.clientHeight + 1 &&
+          overflowY !== 'visible' && overflowY !== 'clip';
+      })
+      .sort((a, b) => (b.scrollHeight - b.clientHeight) - (a.scrollHeight - a.clientHeight))[0];
+
+    window.scrollTo({ top: root.scrollHeight, behavior: 'smooth' });
+    if (scrollable && scrollable !== root && scrollable !== document.body) {
+      scrollable.scrollTo({ top: scrollable.scrollHeight, behavior: 'smooth' });
+    }
+  };
+
   // Put an element in the browser's "top layer": above every z-index, modals included
   const toTop = el => {
     el.setAttribute('popover', 'manual');
@@ -71,7 +114,7 @@
     if (!profiles.length) { toast('No profile saved. Click the extension icon.'); return; }
     const i = index ?? active;
     const p = profiles[i] || profiles[0];
-    if (index != null) chrome.storage.local.set({ active: index });
+    if (index != null) save({ active: index });
 
     const addNew = addNewRadio();
     if (addNew && !addNew.checked) addNew.click();
@@ -86,6 +129,9 @@
     const want = (p.type || 'checking').toLowerCase();
     const typeRadio = findRadio(t => t.toLowerCase() === want);
     if (typeRadio && !typeRadio.checked) typeRadio.click();
+
+    // Let the page finish reacting to the input events before measuring its scroll area.
+    setTimeout(scrollToBottom, 150);
 
     toast(`Filled: ${p.label || p.name} ✓ Review, then click Transfer`);
   }
@@ -173,7 +219,7 @@
       dragging = false;
       if (moved) {
         const r = bubble.getBoundingClientRect();
-        chrome.storage.local.set({ bubblePos: { left: Math.round(r.left), top: Math.round(r.top) } });
+        save({ bubblePos: { left: Math.round(r.left), top: Math.round(r.top) } });
       } else {
         trigger();
       }
