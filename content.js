@@ -169,6 +169,7 @@
   const closeMenu = () => { menu?.remove(); menu = null; };
 
   // ---------- bubble ----------
+  const BUBBLE_SIZE = 100;
   const clamp = (v, max) => Math.max(0, Math.min(v, max));
 
   function placeBubble() {
@@ -176,8 +177,8 @@
     const pos = settings.bubblePos;
     if (pos) {
       Object.assign(bubble.style, {
-        left: clamp(pos.left, innerWidth - 52) + 'px',
-        top: clamp(pos.top, innerHeight - 52) + 'px',
+        left: clamp(pos.left, innerWidth - BUBBLE_SIZE) + 'px',
+        top: clamp(pos.top, innerHeight - BUBBLE_SIZE) + 'px',
         right: 'auto', bottom: 'auto'
       });
     } else {
@@ -190,8 +191,8 @@
     bubble.textContent = '⚡';
     Object.assign(bubble.style, {
       inset: 'auto', margin: '0', border: 'none', padding: '0', position: 'fixed',
-      width: '52px', height: '52px', borderRadius: '50%', background: '#1a73e8',
-      color: '#fff', fontSize: '24px', display: 'flex', alignItems: 'center',
+      width: `${BUBBLE_SIZE}px`, height: `${BUBBLE_SIZE}px`, borderRadius: '50%', background: '#1a73e8',
+      color: '#fff', fontSize: '44px', display: 'flex', alignItems: 'center',
       justifyContent: 'center', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,.3)',
       userSelect: 'none', overflow: 'visible'
     });
@@ -209,8 +210,8 @@
       if (!dragging) return;
       moved = true;
       Object.assign(bubble.style, {
-        left: clamp(e.clientX - offX, innerWidth - 52) + 'px',
-        top: clamp(e.clientY - offY, innerHeight - 52) + 'px',
+        left: clamp(e.clientX - offX, innerWidth - BUBBLE_SIZE) + 'px',
+        top: clamp(e.clientY - offY, innerHeight - BUBBLE_SIZE) + 'px',
         right: 'auto', bottom: 'auto'
       });
     });
